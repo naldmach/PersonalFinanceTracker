@@ -1,16 +1,57 @@
 ﻿// See https://aka.ms/new-console-template for more information
-// Personal Finance Tracker - Organized with Methods
+// Personal Finance Tracker - Multiple Transactions
 using System;
-using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
+using System.Transactions;
+
+// Store all transactions in a list
+List<Transaction> transactions = new List<Transaction>();
+decimal balance = 0m; // The 'm' suffix makes this a decimal literal
 
 Console.WriteLine("Welcome to Personal Finance Tracker!");
 Console.WriteLine("====================================");
 
-// Use methods to organize code
-AddTransaction();
+// Main program loop
+while (true)
+{
+    ShowMenu();
+    string choice = Console.ReadLine();
 
-// Method to handle adding a new transaction
-static void AddTransaction()
+    switch (choice)
+    {
+        case "1":
+            AddTransaction();
+            break;
+        case "2":
+            ViewAllTransactions();
+            break;
+        case "3":
+            ViewBalance();
+            break;
+        case "4":
+            Console.WriteLine("Thank you for using Personal Finance Tracker!");
+            return; // Exit the program
+        default:
+            Console.WriteLine("Invalid choice. Please try again.");
+            break;
+    }
+
+    Console.WriteLine(); // Add blank line for readability
+}
+
+// Display menu options
+static void ShowMenu()
+{
+    Console.WriteLine("What would you like to do?");
+    Console.WriteLine("1. Add a transaction");
+    Console.WriteLine("2. View all transactions");
+    Console.WriteLine("3. View balance");
+    Console.WriteLine("4. Exit");
+    Console.WriteLine("Choose an option (1-4): ");
+}
+
+// Add a new transaction
+void AddTransaction()
 {
     Console.Write("Enter transaction description: ");
     string description = Console.ReadLine();
@@ -18,19 +59,79 @@ static void AddTransaction()
     decimal amount = GetValidAmount();
     bool isIncome = GetTransactionType();
 
-    DisplayTransactionSummary(description, amount, isIncome);
+    // Create a new transaction and add to list
+    Transaction transaction = new Transaction
+    {
+        Description = description,
+        Amount = amount,
+        IsIncome = isIncome,
+        Date = DateTime.Now // Current date and time
+    };
+
+    transactions.Add(transaction);
+
+    // Update balance
+    if (isIncome)
+        balance += amount;
+    else
+        balance -= amount;
+
+    Console.WriteLine($"Transaction added successfully! New balance: {balance:C}");
 }
 
-// Method to get a valid amount from user
+// Display all transactions
+void ViewAllTransactions()
+{
+    if (transactions.Count == 0)
+    {
+        Console.WriteLine("No transactions recorded yet.");
+        return;
+    }
+
+    Console.WriteLine("All Transactions:");
+    Console.WriteLine("================");
+
+    foreach (Transaction transaction in transactions)
+    {
+        string type = transaction.IsIncome ? "Income" : "Expense";
+        string sign = transaction.IsIncome ? "+" : "-";
+
+        Console.WriteLine($"{transaction.Date:yyyy-MM-dd HH:mm} | {type} | {sign}{transaction.Amount:C} | {transaction.Description}");
+    }
+}
+
+// Show current balance
+void ViewBalance()
+{
+    Console.WriteLine($"Current Balance: {balance:C}");
+
+    // Calculate income and expense totals
+    decimal totalIncome = 0;
+    decimal totalExpenses = 0;
+
+    foreach (Transaction transaction in transactions)
+    {
+        if (transaction.IsIncome)
+            totalIncome += transaction.Amount;
+        else
+            totalExpenses += transaction.Amount;
+    }
+
+    Console.WriteLine($"Total Income: +{totalIncome:C}");
+    Console.WriteLine($"Total Expenses: -{totalExpenses:C}");
+}
+
+// Keep the helpler methods we created earlier
 static decimal GetValidAmount()
 {
-    while (true) // Keep asking until we get valid input
+    while (true)
     {
         Console.Write("Enter amount: ");
         string input = Console.ReadLine();
+
         if (decimal.TryParse(input, out decimal amount) && amount > 0)
         {
-            return amount; // Exit method and return the valid amount
+            return amount;
         }
         else
         {
@@ -39,7 +140,6 @@ static decimal GetValidAmount()
     }
 }
 
-// Method to determine if transaction is income or expense
 static bool GetTransactionType()
 {
     while (true)
@@ -56,14 +156,11 @@ static bool GetTransactionType()
     }
 }
 
-// Method to display transaction summary
-static void DisplayTransactionSummary(string description, decimal amount, bool isIncome)
+// Transaction class to represent a single financial transaction
+public class Transaction
 {
-    Console.WriteLine($"\nTransaction recorded:");
-    Console.WriteLine($"Description: {description}");
-    Console.WriteLine($"Amount: {amount:C}");
-    Console.WriteLine($"Type: {(isIncome ? "Income" : "Expense")}");
-
-    string impact = isIncome ? "+" : "-";
-    Console.WriteLine($"Balance change: {impact}{amount:C}");
+    public string Description { get; set; }
+    public decimal Amount { get; set; }
+    public bool IsIncome { get; set; }
+    public DateTime Date { get; set; }
 }
